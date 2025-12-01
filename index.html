@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Bot Messenger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0088cc 0%, #00c6ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .app {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            height: calc(100vh - 40px);
+            display: flex;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .sidebar-header h2 {
+            color: #0088cc;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .token-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background: #006699;
+        }
+        
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .chat-item {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            background: white;
+            cursor: pointer;
+            border: 1px solid #eee;
+        }
+        
+        .chat-item:hover {
+            background: #f0f8ff;
+        }
+        
+        .chat-item.active {
+            background: #e3f2fd;
+            border-left: 4px solid #0088cc;
+        }
+        
+        /* Main Chat */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            display: none;
+        }
+        
+        .chat-header.active {
+            display: block;
+        }
+        
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f0f2f5;
+        }
+        
+        .message {
+            max-width: 70%;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+        }
+        
+        .message.received {
+            background: white;
+            margin-right: auto;
+        }
+        
+        .message.sent {
+            background: #0088cc;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: none;
+        }
+        
+        .input-area.active {
+            display: block;
+        }
+        
+        .message-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+        }
+        
+        .send-btn {
+            margin-top: 10px;
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            float: right;
+        }
+        
+        /* Welcome Screen */
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .welcome-screen h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .welcome-screen p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+        
+        .instructions h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            color: #666;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 Bot Messenger</h2>
+                <input type="password" 
+                       class="token-input" 
+                       id="botToken" 
+                       placeholder="Enter Bot Token from @BotFather">
+                <button class="btn" onclick="saveToken()">Save Token & Start</button>
+            </div>
+            
+            <div class="chat-list" id="chatList">
+                <!-- Chats will appear here -->
+                <div class="chat-item" onclick="selectChat('123456')">
+                    <strong>Test User 1</strong><br>
+                    <small>Hello there!</small>
+                </div>
+                <div class="chat-item" onclick="selectChat('789012')">
+                    <strong>Test User 2</strong><br>
+                    <small>How are you?</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="main-chat">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div>
+                    <h2>Welcome to Telegram Bot Messenger</h2>
+                    <p>Connect your bot and start chatting</p>
+                    
+                    <div class="instructions">
+                        <h4>How to use:</h4>
+                        <ol>
+                            <li>Get bot token from @BotFather on Telegram</li>
+                            <li>Enter token in the left sidebar</li>
+                            <li>Share your bot link with users</li>
+                            <li>Chats will appear here automatically</li>
+                            <li>Click on any chat to reply</li>
+                        </ol>
+                    </div>
+                    
+                    <p><strong>Share your bot:</strong><br>
+                    <code id="botLink">t.me/your_bot_username</code></p>
+                </div>
+            </div>
+            
+            <!-- Active Chat -->
+            <div class="chat-header" id="chatHeader">
+                <h3 id="chatName">User Name</h3>
+                <p id="chatId">ID: 123456</p>
+            </div>
+            
+            <div class="messages" id="messages">
+                <!-- Messages will appear here -->
+            </div>
+            
+            <div class="input-area" id="inputArea">
+                <input type="text" 
+                       class="message-input" 
+                       id="messageInput" 
+                       placeholder="Type your message..."
+                       onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button class="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple JavaScript
+        let botToken = '';
+        let currentChatId = '';
+        
+        function saveToken() {
+            const token = document.getElementById('botToken').value.trim();
+            if (!token) {
+                alert('Please enter bot token');
+                return;
+            }
+            
+            botToken = token;
+            localStorage.setItem('bot_token', token);
+            alert('Token saved!');
+            
+            // Setup webhook
+            setupWebhook(token);
+        }
+        
+        function setupWebhook(token) {
+            const webhookUrl = `${window.location.origin}/api/webhook?token=${token}`;
+            
+            fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log('Webhook setup:', data);
+                    if (data.ok) {
+                        alert('Bot connected successfully!');
+                    }
+                })
+                .catch(err => {
+                    console.error('Webhook error:', err);
+                });
+        }
+        
+        function selectChat(chatId) {
+            currentChatId = chatId;
+            
+            // Show chat interface
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('chatHeader').classList.add('active');
+            document.getElementById('inputArea').classList.add('active');
+            
+            // Update chat info
+            document.getElementById('chatName').textContent = 'Test User';
+            document.getElementById('chatId').textContent = `ID: ${chatId}`;
+            
+            // Load messages
+            loadMessages(chatId);
+        }
+        
+        function loadMessages(chatId) {
+            const messagesDiv = document.getElementById('messages');
+            
+            // Sample messages
+            messagesDiv.innerHTML = `
+                <div class="message received">
+                    Hello! How are you?
+                </div>
+                <div class="message sent">
+                    I'm good, thanks!
+                </div>
+                <div class="message received">
+                    Can you help me with something?
+                </div>
+            `;
+            
+            // Scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message || !currentChatId || !botToken) {
+                alert('Please enter a message and make sure bot is connected');
+                return;
+            }
+            
+            // Add to UI
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `
+                <div class="message sent">
+                    ${message}
+                </div>
+            `;
+            
+            // Send to Telegram
+            fetch('/api/bot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token: botToken,
+                    chatId: currentChatId,
+                    message: message
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Message sent:', data);
+                } else {
+                    alert('Failed to send message');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Error sending message');
+            });
+            
+            // Clear input
+            input.value = '';
+            input.focus();
+            
+            // Scroll to bottom
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Load saved token
+        window.onload = function() {
+            const savedToken = localStorage.getItem('bot_token');
+            if (savedToken) {
+                document.getElementById('botToken').value = savedToken;
+                botToken = savedToken;
+            }
+        };
+    </script>
+</body>
+  </html>
